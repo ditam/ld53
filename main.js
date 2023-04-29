@@ -17,6 +17,8 @@ const DROP_TIMEOUT = 1000;
 const FALL_DURATION = 3000;
 
 const PLAYER_SPEED = 8;
+const HUNTER_RANGE = 250;
+const HUNTER_TIMEOUT = 2000;
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -30,7 +32,7 @@ let DEBUG = location && location.hostname==='localhost';
 let ctx, debugLog;
 
 let mapOffset = 0;
-const mapObjects = [
+const targets = [
   { x: 800, y: 500 },
   { x: 250, y: 400 },
   { x: 200, y: 200 },
@@ -46,6 +48,18 @@ const mapObjects = [
   { x: 400, y: -2100 },
   { x: 500, y: -2200 },
 ];
+
+const enemies = [
+  { x: 600, y: 200, type: 'hunter', lastShot: 0 },
+  { x: 1100, y: -200, type: 'hunter', lastShot: 0 },
+  { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
+];
+const enemyType2Img = {
+  hunter: $('<img>').attr('src', 'assets/hunter.png').get(0)
+};
+const enemyType2Size = {
+  hunter: 32
+};
 
 const mapDoodads = [];
 (function generateRandomDoodads(){
@@ -65,7 +79,7 @@ const doodadType2Img = {
 
 const playerImage = $('<img>').attr('src', 'assets/stork-sprites.png').get(0);
 const player = {
-  x: 600,
+  x: 1000,
   y: 600
 };
 
@@ -152,22 +166,60 @@ function drawFrame(timestamp) {
       &&
       (d.y + mapOffset < HEIGHT) // not yet scrolled out
     ) {
-      ctx.drawImage(
-        doodadType2Img[d.type], d.x, d.y + mapOffset, 32, 32);
+      ctx.drawImage(doodadType2Img[d.type], d.x, d.y + mapOffset, 32, 32);
     }
   });
 
-
-  // draw map objects
-  mapObjects.forEach(o => {
+  // draw enemies
+  enemies.forEach(e => {
+    const size = enemyType2Size[e.type];
     if (
-      (o.y + mapOffset + OBJ_SIZE_MAX > 0) // already in view
+      (e.y + mapOffset + size + HUNTER_RANGE > 0) // already in view
       &&
-      (o.y + mapOffset < HEIGHT) // not yet scrolled out
+      (e.y + mapOffset - HUNTER_RANGE < HEIGHT) // not yet scrolled out
+    ) {
+      ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, 32, 32);
+      if (e.type === 'hunter') {
+        // draw range
+        ctx.beginPath();
+        ctx.arc(e.x, e.y + mapOffset, HUNTER_RANGE, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // draw rifle - pointing at player
+        let dX = player.x - e.x;
+        let dY = player.y - (e.y + mapOffset);
+        const dist = Math.sqrt(dX*dX + dY*dY);
+        dX = dX / dist;
+        dY = dY / dist;
+        // (dX, dY is now the unit vector pointing towards the player)
+
+        ctx.save();
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(e.x, e.y + mapOffset);
+          ctx.lineTo(e.x + dX * 30, e.y + mapOffset + dY * 30);
+          ctx.stroke();
+        ctx.restore();
+
+        // check firing range
+        if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT) {
+          e.lastShot = timestamp;
+          console.log('shot by:', e);
+        }
+      }
+    }
+  });
+
+  // draw targets (TODO: appear as houses)
+  targets.forEach(t => {
+    if (
+      (t.y + mapOffset + OBJ_SIZE_MAX > 0) // already in view
+      &&
+      (t.y + mapOffset < HEIGHT) // not yet scrolled out
     ) {
       ctx.save();
       ctx.fillStyle = '#994400';
-      ctx.fillRect(o.x, o.y + mapOffset, 150, 70);
+      ctx.fillRect(t.x, t.y + mapOffset, 150, 70);
       ctx.restore();
     }
   });
@@ -191,12 +243,13 @@ function drawFrame(timestamp) {
       // calculate score
       package.evaluated = true;
 
-      mapObjects.forEach(o => {
+      targets.forEach(t => {
+        // TODO: higher score for chimney hits?
         if (
-          o.x < package.x &&
-          o.x + 150 > package.x &&
-          o.y < package.y &&
-          o.y + 70 > package.y
+          t.x < package.x &&
+          t.x + 150 > package.x &&
+          t.y < package.y &&
+          t.y + 70 > package.y
         ) {
           playerScore += 500;
           debugLog.text(playerScore);
@@ -239,8 +292,8 @@ $(document).ready(function() {
   debugLog.text(playerScore);
 
   ctx.fillStyle = '#88DD88';
-  ctx.strokeStyle = 'green';
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
 
   // keypress event listeners
   document.addEventListener('keydown', event => {
