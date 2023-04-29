@@ -1,6 +1,8 @@
 
-const WIDTH = 1200;
-const HEIGHT = 700;
+const ORIG_WIDTH = 1200;
+const ORIG_HEIGHT = 700;
+let WIDTH = ORIG_WIDTH;
+let HEIGHT = ORIG_HEIGHT;
 
 const PLAYER_SIZE = {
   X: 100,
@@ -21,6 +23,9 @@ const HUNTER_RANGE = 250;
 const HUNTER_TIMEOUT = 2000;
 const HELICOPTER_TIMEOUT = 3000;
 const HELICOPTER_FIRE_DURATION = 1500;
+
+const SCALING_STEP_MAX = 50;
+const SCALING_DURATION = 5000;
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -75,7 +80,8 @@ const mapDoodads = [];
 (function generateRandomDoodads(){
   for (let i=0; i<100; i++) {
     mapDoodads.push({
-      x: getRandomIntFromInterval(0, WIDTH),
+      // to make the scale effect look nice, we generate doodads slightly off to the sides as well
+      x: getRandomIntFromInterval(-400, WIDTH+400),
       y: getRandomIntFromInterval(-3000, HEIGHT),
       type: getRandomItem(['grass1', 'grass2', 'bush'])
     });
@@ -86,6 +92,9 @@ const doodadType2Img = {
   grass2: $('<img>').attr('src', 'assets/grass2.png').get(0),
   bush: $('<img>').attr('src', 'assets/bush.png').get(0)
 };
+
+const cloud1Image = $('<img>').attr('src', 'assets/cloud1.png').get(0);
+const cloud2Image = $('<img>').attr('src', 'assets/cloud2.png').get(0);
 
 const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
 const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
@@ -136,9 +145,49 @@ function getSpriteOffset(currentFrame, objName) {
   return spriteOffset;
 }
 
+let scaling = false;
+let scalingType = 'out';
+let currentScale = 1.0;
+let scalingSteps = 0;
+let scalingTimer = null;
+
+// used to increase the padding for the in-viewport checks while scaled
+let scaledViewportAdjustment = 0;
+
 function drawFrame(timestamp) {
+  ctx.save();
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  if (scaling) {
+    scaledViewportAdjustment = 1000;
+    if (scalingType === 'out') {
+      if (scalingSteps < SCALING_STEP_MAX) {
+        scalingSteps++;
+        currentScale -= 0.01;
+      } else {
+        if (!scalingTimer) {
+          scalingTimer = setTimeout(() => {
+            scalingTimer = null;
+            scalingType = 'in';
+          }, SCALING_DURATION);
+        }
+      }
+    } else {
+      if (scalingSteps > 0) {
+        scalingSteps--;
+        currentScale += 0.01;
+      } else {
+        scaling = false;
+        scaledViewportAdjustment = 0;
+        scalingType = 'out';
+        console.log('scaling done:', scalingSteps, currentScale, WIDTH, HEIGHT);
+      }
+    }
+    ctx.setTransform(currentScale, 0, 0, currentScale, 0, 0);
+    ctx.translate(scalingSteps*8, scalingSteps*8);
+    WIDTH = ORIG_WIDTH / currentScale;
+    HEIGHT = ORIG_HEIGHT / currentScale;
+  }
 
   // ##### Update phase #####
   // - TODO: extract and de-couple from drawing
@@ -161,7 +210,7 @@ function drawFrame(timestamp) {
   }
 
   // drop packages
-  if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT) {
+  if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT && !scaling) {
     // TODO: after graphics are finalized, adjust package x/y to start from beak
     packages.push({
       x: player.x,
@@ -177,7 +226,7 @@ function drawFrame(timestamp) {
   // draw map doodads (decorative only)
   mapDoodads.forEach(d => {
     if (
-      (d.y + mapOffset + 32 > 0) // already in view
+      (d.y + mapOffset + 32 + scaledViewportAdjustment > 0) // already in view
       &&
       (d.y + mapOffset < HEIGHT) // not yet scrolled out
     ) {
@@ -190,7 +239,7 @@ function drawFrame(timestamp) {
     const size = enemyType2Size[e.type];
     const range = enemyType2Range[e.type];
     if (
-      (e.y + mapOffset + size + range > 0) // already in view
+      (e.y + mapOffset + size + range + scaledViewportAdjustment > 0) // already in view
       &&
       (e.y + mapOffset - size - range < HEIGHT) // not yet scrolled out
     ) {
@@ -218,7 +267,7 @@ function drawFrame(timestamp) {
         ctx.restore();
 
         // check firing range
-        if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT) {
+        if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT && !scaling) {
           e.lastShot = timestamp;
           console.log('shot by:', e);
         }
@@ -245,6 +294,7 @@ function drawFrame(timestamp) {
           // (dX, dY is now the unit vector pointing towards the player)
 
           const curveOffset = Math.sin(Math.PI * shotProgress) * 100 * (e.x<WIDTH/2? -1 : 1);
+          // TODO: rotate, if not exactly, at least 180 when shooting upwards
           ctx.drawImage(
             rocketImage,
             getSpriteOffset(frameCount, 'rocket'), 0, 64, 64,
@@ -254,6 +304,7 @@ function drawFrame(timestamp) {
           if (shotProgress === 1) {
             e.shooting = 0;
             // TODO: distance check
+            // TODO: don't check when scaling
             console.log('heli hit player');
           }
         }
@@ -271,7 +322,7 @@ function drawFrame(timestamp) {
   // draw targets (TODO: appear as houses)
   targets.forEach(t => {
     if (
-      (t.y + mapOffset + OBJ_SIZE_MAX > 0) // already in view
+      (t.y + mapOffset + OBJ_SIZE_MAX + scaledViewportAdjustment > 0) // already in view
       &&
       (t.y + mapOffset < HEIGHT) // not yet scrolled out
     ) {
@@ -319,6 +370,19 @@ function drawFrame(timestamp) {
   });
 
   // draw player
+
+  // -> this restores the context from before the beginning of this method,
+  //    so if any transformation was applied, the player sprite is not affected.
+  ctx.restore();
+
+  if (scaling) {
+    ctx.save();
+    ctx.globalAlpha = scalingSteps * (1 / SCALING_STEP_MAX);
+    ctx.drawImage(cloud1Image, 0, 0, WIDTH, HEIGHT);
+    ctx.drawImage(cloud2Image, -200, -mapOffset % 600, WIDTH, HEIGHT*2);
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.drawImage(
     playerImage,
