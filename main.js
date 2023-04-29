@@ -61,6 +61,26 @@ let lastDrop = 0-DROP_TIMEOUT-1;
 const packages = [];
 
 let frameCount = 0;
+
+function getSpriteOffset(currentFrame, objName) {
+  console.assert(typeof currentFrame === 'number');
+  console.assert(typeof objName === 'string');
+
+  let spriteOffset = 0;
+  if (objName = 'stork') {
+    if (currentFrame%100 > 80) {
+      spriteOffset = 100;
+    }
+    if (currentFrame%100 > 90) {
+      spriteOffset = 200;
+    }
+  } else {
+    console.assert(false, 'Unknown sprite object name: ' + objName);
+  }
+
+  return spriteOffset;
+}
+
 function drawFrame(timestamp) {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -127,16 +147,9 @@ function drawFrame(timestamp) {
 
   // draw player
   ctx.save();
-  let spriteOffset = 0;
-  if (frameCount%100 > 80) {
-    spriteOffset = 100;
-  }
-  if (frameCount%100 > 90) {
-    spriteOffset = 200;
-  }
   ctx.drawImage(
     playerImage,
-    spriteOffset, 0, PLAYER_SIZE.X, PLAYER_SIZE.Y,
+    getSpriteOffset(frameCount, 'stork'), 0, PLAYER_SIZE.X, PLAYER_SIZE.Y,
     player.x-PLAYER_SIZE.X/2, player.y-PLAYER_SIZE.Y/2, PLAYER_SIZE.X, PLAYER_SIZE.Y
   );
   if (DEBUG) {
