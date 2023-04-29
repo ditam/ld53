@@ -20,7 +20,7 @@ const PLAYER_SPEED = 8;
 
 let DEBUG = location && location.hostname==='localhost';
 
-let ctx;
+let ctx, debugLog;
 
 let mapOffset = 0;
 const mapObjects = [
@@ -46,7 +46,10 @@ const player = {
   y: 600
 };
 
-const bagImage = $('<img>').attr('src', 'assets/bag.png').get(0);
+let playerScore = 0;
+
+const packageImageBlue = $('<img>').attr('src', 'assets/package-blue.png').get(0);
+const packageImagePink = $('<img>').attr('src', 'assets/package-pink.png').get(0);
 
 const keysPressed = {
   up:    false,
@@ -105,15 +108,15 @@ function drawFrame(timestamp) {
     player.x = Math.max(0, player.x - PLAYER_SPEED);
   }
 
-  // drop bags
+  // drop packages
   if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT) {
     // TODO: after graphics are finalized, adjust package x/y to start from beak
     packages.push({
       x: player.x,
       y: player.y - mapOffset,
+      type: Math.random() < 0.5 ? 'blue' : 'pink',
       dropTime: timestamp
     });
-    console.log('dropped package at:', player.x, player.y + mapOffset)
     lastDrop = timestamp;
   }
 
@@ -135,14 +138,37 @@ function drawFrame(timestamp) {
 
   // draw packages
   packages.forEach(package => {
-    ctx.save();
+    // only draw packages in viewport
+    if (package.y + mapOffset - PACKAGE_SIZE > HEIGHT) {
+      return;
+    }
+
     // age in (0, 1) interval
     const age = Math.min(FALL_DURATION, timestamp - package.dropTime) / FALL_DURATION;
     const size = Math.max(PACKAGE_MIN_SIZE, PACKAGE_SIZE * (1-age));
-    ctx.drawImage(bagImage, package.x, package.y + mapOffset, size, size);
+    ctx.drawImage(
+      package.type === 'blue'? packageImageBlue : packageImagePink,
+      package.x, package.y + mapOffset, size, size
+    );
 
-    // TODO: dropzone calculation when age === 1
-    ctx.restore();
+    if (age === 1 && !package.evaluated) {
+      // calculate score
+      package.evaluated = true;
+
+      mapObjects.forEach(o => {
+        if (
+          o.x < package.x &&
+          o.x + 150 > package.x &&
+          o.y < package.y &&
+          o.y + 70 > package.y
+        ) {
+          playerScore += 500;
+          debugLog.text(playerScore);
+        }
+      });
+
+      // TODO: visual indicator at landing
+    }
   });
 
   // draw player
@@ -172,6 +198,9 @@ $(document).ready(function() {
   $(canvas).attr('width', WIDTH);
 
   ctx = canvas.getContext('2d');
+
+  debugLog = $(document.getElementById('debug-log'));
+  debugLog.text(playerScore);
 
   ctx.fillStyle = '#88DD88';
   ctx.strokeStyle = 'green';
