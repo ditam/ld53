@@ -18,6 +18,13 @@ const FALL_DURATION = 3000;
 
 const PLAYER_SPEED = 8;
 
+function getRandomItem(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+function getRandomIntFromInterval(min, max) { // min and max included
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 let DEBUG = location && location.hostname==='localhost';
 
 let ctx, debugLog;
@@ -25,8 +32,8 @@ let ctx, debugLog;
 let mapOffset = 0;
 const mapObjects = [
   { x: 800, y: 500 },
-  { x: 200, y: 200 },
   { x: 250, y: 400 },
+  { x: 200, y: 200 },
   { x: 800, y: -100 },
   { x: 500, y: -200 },
   { x: 200, y: -400 },
@@ -39,6 +46,22 @@ const mapObjects = [
   { x: 400, y: -2100 },
   { x: 500, y: -2200 },
 ];
+
+const mapDoodads = [];
+(function generateRandomDoodads(){
+  for (let i=0; i<100; i++) {
+    mapDoodads.push({
+      x: getRandomIntFromInterval(0, WIDTH),
+      y: getRandomIntFromInterval(-3000, HEIGHT),
+      type: getRandomItem(['grass1', 'grass2', 'bush'])
+    });
+  }
+})();
+const doodadType2Img = {
+  grass1: $('<img>').attr('src', 'assets/grass1.png').get(0),
+  grass2: $('<img>').attr('src', 'assets/grass2.png').get(0),
+  bush: $('<img>').attr('src', 'assets/bush.png').get(0)
+};
 
 const playerImage = $('<img>').attr('src', 'assets/stork-sprites.png').get(0);
 const player = {
@@ -121,6 +144,19 @@ function drawFrame(timestamp) {
   }
 
   // ##### Draw phase #####
+
+  // draw map doodads (decorative only)
+  mapDoodads.forEach(d => {
+    if (
+      (d.y + mapOffset + 32 > 0) // already in view
+      &&
+      (d.y + mapOffset < HEIGHT) // not yet scrolled out
+    ) {
+      ctx.drawImage(
+        doodadType2Img[d.type], d.x, d.y + mapOffset, 32, 32);
+    }
+  });
+
 
   // draw map objects
   mapObjects.forEach(o => {
