@@ -7,9 +7,11 @@ const PLAYER_SIZE = {
   Y: 50
 };
 
-const PACKAGE_SIZE = 30;
+const PACKAGE_SIZE = 45;
+const PACKAGE_MIN_SIZE = 5;
 
 const DROP_TIMEOUT = 1000;
+const FALL_DURATION = 3000;
 
 const PLAYER_SPEED = 8;
 
@@ -17,7 +19,23 @@ let DEBUG = location && location.hostname==='localhost';
 
 let ctx;
 
-let yPosition = 0;
+let mapOffset = 0;
+const mapObjects = [
+  { x: 800, y: 500 },
+  { x: 200, y: 200 },
+  { x: 250, y: 400 },
+  { x: 800, y: -100 },
+  { x: 500, y: -200 },
+  { x: 200, y: -400 },
+  { x: 700, y: -700 },
+  { x: 300, y: -1000 },
+  { x: 500, y: -1200 },
+  { x: 300, y: -1400 },
+  { x: 500, y: -1700 },
+  { x: 300, y: -2000 },
+  { x: 400, y: -2100 },
+  { x: 500, y: -2200 },
+];
 
 const playerImage = $('<img>').attr('src', 'assets/stork.png').get(0);
 const player = {
@@ -43,7 +61,13 @@ function drawFrame(timestamp) {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  // update model state and positions
+  // ##### Update phase #####
+  // - TODO: extract and de-couple from drawing
+
+  // scroll map
+  mapOffset++;
+
+  // move player
   if (keysPressed.up && player.y > 0) {
     player.y = Math.max(0, player.y - PLAYER_SPEED);
   }
@@ -61,23 +85,33 @@ function drawFrame(timestamp) {
   if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT) {
     packages.push({
       x: player.x,
-      y: player.y,
+      y: player.y - mapOffset,
       dropTime: timestamp
     });
+    console.log('dropped package at:', player.x, player.y + mapOffset)
     lastDrop = timestamp;
   }
 
-  // debug runner
-  yPosition = (timestamp/10) % HEIGHT;
-  ctx.save();
-  ctx.fillStyle = '#00FF00';
-  ctx.fillRect(WIDTH-100, yPosition, 20, 20);
-  ctx.restore();
+  // ##### Draw phase #####
+
+  // draw map objects
+  mapObjects.forEach(o => {
+    // TODO: only draw those which are in the viewport
+    ctx.save();
+    ctx.fillStyle = '#994400';
+    ctx.fillRect(o.x, o.y + mapOffset, 150, 70);
+    ctx.restore();
+  });
 
   // draw packages
   packages.forEach(package => {
     ctx.save();
-    ctx.drawImage(bagImage, package.x, package.y, PACKAGE_SIZE, PACKAGE_SIZE);
+    // age in (0, 1) interval
+    const age = Math.min(FALL_DURATION, timestamp - package.dropTime) / FALL_DURATION;
+    const size = Math.max(PACKAGE_MIN_SIZE, PACKAGE_SIZE * (1-age));
+    ctx.drawImage(bagImage, package.x, package.y + mapOffset, size, size);
+
+    // TODO: dropzone calculation when age === 1
     ctx.restore();
   });
 
