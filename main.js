@@ -40,7 +40,7 @@ const mapObjects = [
   { x: 500, y: -2200 },
 ];
 
-const playerImage = $('<img>').attr('src', 'assets/stork.png').get(0);
+const playerImage = $('<img>').attr('src', 'assets/stork-sprites.png').get(0);
 const player = {
   x: 600,
   y: 600
@@ -60,6 +60,7 @@ const keysPressed = {
 let lastDrop = 0-DROP_TIMEOUT-1;
 const packages = [];
 
+let frameCount = 0;
 function drawFrame(timestamp) {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -126,7 +127,18 @@ function drawFrame(timestamp) {
 
   // draw player
   ctx.save();
-  ctx.drawImage(playerImage, player.x-PLAYER_SIZE.X/2, player.y-PLAYER_SIZE.Y/2, PLAYER_SIZE.X, PLAYER_SIZE.Y);
+  let spriteOffset = 0;
+  if (frameCount%100 > 80) {
+    spriteOffset = 100;
+  }
+  if (frameCount%100 > 90) {
+    spriteOffset = 200;
+  }
+  ctx.drawImage(
+    playerImage,
+    spriteOffset, 0, PLAYER_SIZE.X, PLAYER_SIZE.Y,
+    player.x-PLAYER_SIZE.X/2, player.y-PLAYER_SIZE.Y/2, PLAYER_SIZE.X, PLAYER_SIZE.Y
+  );
   if (DEBUG) {
     ctx.save();
     ctx.fillStyle = '#dd2020';
@@ -135,6 +147,7 @@ function drawFrame(timestamp) {
   }
   ctx.restore();
 
+  frameCount++;
   requestAnimationFrame(drawFrame);
 }
 
