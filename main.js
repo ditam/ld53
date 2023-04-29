@@ -7,7 +7,10 @@ const PLAYER_SIZE = {
   Y: 50
 };
 
-const PACKAGE_SIZE = 45;
+// used as padding for determining drawing of off-map objects
+const OBJ_SIZE_MAX = 200;
+
+const PACKAGE_SIZE = 50;
 const PACKAGE_MIN_SIZE = 5;
 
 const DROP_TIMEOUT = 1000;
@@ -83,6 +86,7 @@ function drawFrame(timestamp) {
 
   // drop bags
   if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT) {
+    // TODO: after graphics are finalized, adjust package x/y to start from beak
     packages.push({
       x: player.x,
       y: player.y - mapOffset,
@@ -96,11 +100,16 @@ function drawFrame(timestamp) {
 
   // draw map objects
   mapObjects.forEach(o => {
-    // TODO: only draw those which are in the viewport
-    ctx.save();
-    ctx.fillStyle = '#994400';
-    ctx.fillRect(o.x, o.y + mapOffset, 150, 70);
-    ctx.restore();
+    if (
+      (o.y + mapOffset + OBJ_SIZE_MAX > 0) // already in view
+      &&
+      (o.y + mapOffset < HEIGHT) // not yet scrolled out
+    ) {
+      ctx.save();
+      ctx.fillStyle = '#994400';
+      ctx.fillRect(o.x, o.y + mapOffset, 150, 70);
+      ctx.restore();
+    }
   });
 
   // draw packages
