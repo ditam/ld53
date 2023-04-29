@@ -19,6 +19,8 @@ const FALL_DURATION = 3000;
 const PLAYER_SPEED = 8;
 const HUNTER_RANGE = 250;
 const HUNTER_TIMEOUT = 2000;
+const HELICOPTER_TIMEOUT = 3000;
+const HELICOPTER_FIRE_DURATION = 1500;
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -51,14 +53,22 @@ const targets = [
 
 const enemies = [
   { x: 600, y: 200, type: 'hunter', lastShot: 0 },
+  { x: 300, y: 100, type: 'helicopter', lastShot: 0 },
   { x: 1100, y: -200, type: 'hunter', lastShot: 0 },
   { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
 ];
 const enemyType2Img = {
-  hunter: $('<img>').attr('src', 'assets/hunter.png').get(0)
+  helicopter: $('<img>').attr('src', 'assets/helicopter.png').get(0),
+  hunter: $('<img>').attr('src', 'assets/hunter.png').get(0),
+};
+// NB: range also determines the in-viewport checks
+const enemyType2Range = {
+  helicopter: 0,
+  hunter: HUNTER_RANGE,
 };
 const enemyType2Size = {
-  hunter: 32
+  helicopter: 128,
+  hunter: 32,
 };
 
 const mapDoodads = [];
@@ -77,9 +87,10 @@ const doodadType2Img = {
   bush: $('<img>').attr('src', 'assets/bush.png').get(0)
 };
 
-const playerImage = $('<img>').attr('src', 'assets/stork-sprites.png').get(0);
+const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
+const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
 const player = {
-  x: 1000,
+  x: 600,
   y: 600
 };
 
@@ -107,12 +118,16 @@ function getSpriteOffset(currentFrame, objName) {
   console.assert(typeof objName === 'string');
 
   let spriteOffset = 0;
-  if (objName = 'stork') {
+  if (objName === 'stork') {
     if (currentFrame%100 > 80) {
       spriteOffset = 100;
     }
     if (currentFrame%100 > 90) {
       spriteOffset = 200;
+    }
+  } else if (objName === 'rocket') {
+    if (currentFrame%30 > 15) {
+      spriteOffset = 64;
     }
   } else {
     console.assert(false, 'Unknown sprite object name: ' + objName);
@@ -173,12 +188,13 @@ function drawFrame(timestamp) {
   // draw enemies
   enemies.forEach(e => {
     const size = enemyType2Size[e.type];
+    const range = enemyType2Range[e.type];
     if (
-      (e.y + mapOffset + size + HUNTER_RANGE > 0) // already in view
+      (e.y + mapOffset + size + range > 0) // already in view
       &&
-      (e.y + mapOffset - HUNTER_RANGE < HEIGHT) // not yet scrolled out
+      (e.y + mapOffset - size - range < HEIGHT) // not yet scrolled out
     ) {
-      ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, 32, 32);
+      ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, size, size);
       if (e.type === 'hunter') {
         // draw range
         ctx.beginPath();
@@ -205,6 +221,48 @@ function drawFrame(timestamp) {
         if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT) {
           e.lastShot = timestamp;
           console.log('shot by:', e);
+        }
+      } else if (e.type === 'helicopter') {
+        if (!e.activated) {
+          e.lastShot = timestamp;
+          e.activated = true;
+        } else if (timestamp - e.lastShot > HELICOPTER_TIMEOUT) {
+          e.lastShot = timestamp;
+          e.shooting = true;
+          e.targetX = player.x;
+          e.targetY = player.y;
+        }
+
+        if (e.shooting) {
+          // progress in (0, 1) interval
+          const shotProgress = Math.min(HELICOPTER_FIRE_DURATION, timestamp - e.lastShot) / HELICOPTER_FIRE_DURATION;
+
+          let dX = e.targetX - e.x;
+          let dY = e.targetY - (e.y + mapOffset);
+          const dist = Math.sqrt(dX*dX + dY*dY);
+          dX = dX / dist;
+          dY = dY / dist;
+          // (dX, dY is now the unit vector pointing towards the player)
+
+          const curveOffset = Math.sin(Math.PI * shotProgress) * 100 * (e.x<WIDTH/2? -1 : 1);
+          ctx.drawImage(
+            rocketImage,
+            getSpriteOffset(frameCount, 'rocket'), 0, 64, 64,
+            e.x + dX * shotProgress * dist + curveOffset, e.y + mapOffset + dY * shotProgress * dist, 32, 32
+          );
+
+          if (shotProgress === 1) {
+            e.shooting = 0;
+            // TODO: distance check
+            console.log('heli hit player');
+          }
+        }
+
+        if (DEBUG) {
+          ctx.save();
+          ctx.fillStyle = '#dd20dd';
+          ctx.fillRect(e.x-2, e.y + mapOffset -2, 4, 4);
+          ctx.restore();
         }
       }
     }
@@ -347,5 +405,5 @@ $(document).ready(function() {
   });
 
   // blast off
-  drawFrame();
+  drawFrame(0);
 });
