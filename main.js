@@ -420,7 +420,9 @@ function drawFrame(timestamp) {
             }
           });
           console.log('flak hit ' + hitCount + '/' + FLAK_FRAGMENT_COUNT);
-          sounds.flak.play();
+          if (e.targets && e.targets.length > 0) {
+            sounds.flak.play();
+          }
           e.targets = [];
           e.shotEvaluated = true;
         }
