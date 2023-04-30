@@ -33,10 +33,13 @@ const SCALING_STEP_MAX = 50;
 const SCALING_DURATION = 6000;
 const SCALE_TIMEOUT = 7000;
 
-const DASH_DURATION = 800;
+const DASH_STEP_SIZE = 20; // implicitly controls duration - takes shorter if there's no room to dash
 const DASH_TIMEOUT = 3000;
-const DASH_MAX_LENGTH = 250; // in px
+const DASH_MAX_LENGTH = 450; // in px
 const DASH_TRAIL_FADEOUT = 2500;
+const DASH_DAMAGE_RADIUS = 100;
+
+const EXPLOSION_VISIBLE_TIME = 700;
 
 // if you want to dash again while an other trail is visible, we need to revisit the trail logic (singleton vars currently)
 console.assert(DASH_TRAIL_FADEOUT < DASH_TIMEOUT);
@@ -74,6 +77,7 @@ const enemies = [
   { x: 600, y: 200, type: 'hunter', lastShot: 0 },
   { x: 300, y: 100, type: 'flak', lastShot: 0 },
   { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
+  { x: 750, y: -400, type: 'helicopter', lastShot: 0 },
   { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
   { x: 1000, y: -1500, type: 'flak', lastShot: 0 },
   { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
@@ -115,6 +119,7 @@ const doodadType2Img = {
 const cloud1Image = $('<img>').attr('src', 'assets/cloud1.png').get(0);
 const cloud2Image = $('<img>').attr('src', 'assets/cloud2.png').get(0);
 
+const explosionImage = $('<img>').attr('src', 'assets/explosion.png').get(0);
 const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
 const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
 const player = {
@@ -239,7 +244,7 @@ function drawFrame(timestamp) {
   }
 
   if (dashing) {
-    player.y = Math.max(dashEndY + mapOffset, player.y - 20);
+    player.y = Math.max(dashEndY + mapOffset, player.y - DASH_STEP_SIZE);
 
     // draw trail
     ctx.save();
@@ -252,6 +257,19 @@ function drawFrame(timestamp) {
 
     if (player.y === (dashEndY + mapOffset)) {
       dashing = false;
+
+      // check for enemies hit by dash
+      enemies.forEach(e => {
+        if (e.type === 'helicopter') {
+          if (
+            dashX - DASH_DAMAGE_RADIUS < e.x && e.x < dashX + DASH_DAMAGE_RADIUS &&
+            dashStartY > e.y && e.y > dashEndY // NB: dash moves up on map, towards -Infinity
+          ) {
+            e.destroyed = true;
+            e.destroyedTime = timestamp;
+          }
+        }
+      });
     }
   } else {
     // dash trail might be still visible
@@ -319,6 +337,15 @@ function drawFrame(timestamp) {
       &&
       (e.y + mapOffset - size - range < HEIGHT) // not yet scrolled out
     ) {
+      // if destroyed, check for removal
+      if (e.removed) {
+        return;
+      } else {
+        if (e.destroyed && timestamp - e.destroyedTime > EXPLOSION_VISIBLE_TIME) {
+          e.removed = true;
+          return;
+        }
+      }
       ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, size, size);
       if (e.type === 'hunter') {
         // draw range
@@ -351,11 +378,15 @@ function drawFrame(timestamp) {
         if (!e.activated) {
           e.lastShot = timestamp;
           e.activated = true;
-        } else if (timestamp - e.lastShot > HELICOPTER_TIMEOUT) {
+        } else if (timestamp - e.lastShot > HELICOPTER_TIMEOUT && !e.destroyed) {
           e.lastShot = timestamp;
           e.shooting = true;
           e.targetX = player.x;
           e.targetY = player.y;
+        }
+
+        if (e.destroyed && !e.removed) {
+          ctx.drawImage(explosionImage, e.x - size/2, e.y -size/2 + mapOffset, size, size);
         }
 
         if (e.shooting) {
