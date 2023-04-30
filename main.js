@@ -10,6 +10,8 @@ let DEBUG = location && location.hostname==='localhost';
 
 let ctx, debugLog;
 
+const sounds = {};
+
 let mapOffset = 0;
 
 let currentLevel = 0;
@@ -137,6 +139,7 @@ function drawFrame(timestamp) {
           scalingTimer = setTimeout(() => {
             scalingTimer = null;
             scalingType = 'in';
+            sounds.scaleBack.play();
           }, SCALING_DURATION);
         }
       }
@@ -167,6 +170,7 @@ function drawFrame(timestamp) {
   if (keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
     scaling = true;
     lastScale = timestamp;
+    sounds.scale.play();
   }
   if (keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
     dashing = true;
@@ -174,6 +178,7 @@ function drawFrame(timestamp) {
     dashStartY = player.y - mapOffset;
     dashEndY = Math.max(-mapOffset, dashStartY - DASH_MAX_LENGTH);
     lastDash = timestamp;
+    sounds.dash.play();
     console.log('Dash from:', dashStartY, '->', dashEndY);
   }
 
@@ -247,6 +252,7 @@ function drawFrame(timestamp) {
       dropTime: timestamp
     });
     lastDrop = timestamp;
+    sounds.package.play();
   }
 
   // ##### Draw phase #####
@@ -275,9 +281,14 @@ function drawFrame(timestamp) {
       if (e.removed) {
         return;
       } else {
+        let destroyedCount = 0;
         if (e.destroyed && timestamp - e.destroyedTime > EXPLOSION_VISIBLE_TIME) {
+          destroyedCount++;
           e.removed = true;
           return;
+        }
+        if (destroyedCount > 0) {
+          sounds.explosion.play();
         }
       }
       ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, size, size);
@@ -306,17 +317,19 @@ function drawFrame(timestamp) {
         // check firing range
         if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT && !scaling) {
           e.lastShot = timestamp;
+          sounds.shot.play();
           console.log('shot by:', e);
         }
       } else if (e.type === 'helicopter') {
         if (!e.activated) {
           e.lastShot = timestamp;
           e.activated = true;
-        } else if (timestamp - e.lastShot > HELICOPTER_TIMEOUT && !e.destroyed) {
+        } else if (timestamp - e.lastShot > HELICOPTER_TIMEOUT && !e.destroyed && !scaling) {
           e.lastShot = timestamp;
           e.shooting = true;
           e.targetX = player.x;
           e.targetY = player.y;
+          sounds.rocket.play();
         }
 
         if (e.destroyed && !e.removed) {
@@ -363,16 +376,17 @@ function drawFrame(timestamp) {
           ctx.restore();
         }
       } else if (e.type === 'flak') {
-        if (!e.activated) {
+        if (!e.activated && !scaling) {
           e.lastShot = timestamp;
           e.activated = true;
-        } else if (timestamp - e.lastShot > FLAK_INITIAL_TIMEOUT && !e.shooting) {
+        } else if (timestamp - e.lastShot > FLAK_INITIAL_TIMEOUT && !e.shooting && !scaling) {
           e.lastShot = timestamp;
           e.shooting = true;
           e.targets = [];
           if (scaling) {
             return;
           }
+          sounds.alarm.play();
           for (let i=0; i<FLAK_FRAGMENT_COUNT; i++) {
             e.targets.push({
               x: getRandomIntFromInterval(-120, 120),
@@ -406,6 +420,7 @@ function drawFrame(timestamp) {
             }
           });
           console.log('flak hit ' + hitCount + '/' + FLAK_FRAGMENT_COUNT);
+          sounds.flak.play();
           e.targets = [];
           e.shotEvaluated = true;
         }
@@ -455,6 +470,7 @@ function drawFrame(timestamp) {
           t.y + 70 > package.y
         ) {
           playerScore += 500;
+          sounds.targetHit.play();
           // TODO: update score counter
         }
       });
@@ -503,6 +519,16 @@ $(document).ready(function() {
   $(canvas).attr('height', HEIGHT);
   $(canvas).attr('width', WIDTH);
 
+  const splash = $('#splash');
+  splash.width(WIDTH);
+  splash.height(HEIGHT);
+  splash.on('click', function() {
+    // NB: We need a splash screen to force a user interaction which allows audio
+    splash.remove();
+    // blast off
+    drawFrame(0);
+  });
+
   ctx = canvas.getContext('2d');
 
   debugLog = $(document.getElementById('debug-log'));
@@ -511,6 +537,18 @@ $(document).ready(function() {
   ctx.fillStyle = '#88DD88';
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 1;
+
+  // initialize audio assets
+  sounds.alarm = new Audio('assets/sounds/alarm.mp3');
+  sounds.dash = new Audio('assets/sounds/dash.mp3');
+  sounds.explosion = new Audio('assets/sounds/explosion.mp3');
+  sounds.flak = new Audio('assets/sounds/flak.mp3');
+  sounds.package = new Audio('assets/sounds/package.mp3');
+  sounds.rocket = new Audio('assets/sounds/rocket.mp3');
+  sounds.scale = new Audio('assets/sounds/scale.mp3');
+  sounds.scaleBack = new Audio('assets/sounds/scale-rev.mp3');
+  sounds.shot = new Audio('assets/sounds/shot.mp3');
+  sounds.targetHit = new Audio('assets/sounds/target-hit.mp3');
 
   // keypress event listeners
   document.addEventListener('keydown', event => {
@@ -574,7 +612,4 @@ $(document).ready(function() {
         break;
     }
   });
-
-  // blast off
-  drawFrame(0);
 });

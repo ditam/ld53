@@ -17,7 +17,6 @@ const levels = [{
   ],
   enemies: [
     { x: 600, y: 200, type: 'hunter', lastShot: 0 },
-    { x: 300, y: 100, type: 'flak', lastShot: 0 },
     { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
     { x: 750, y: -400, type: 'helicopter', lastShot: 0 },
     { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
