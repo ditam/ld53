@@ -30,7 +30,7 @@ const FLAK_FRAGMENT_COUNT = 7;
 const FLAK_HIT_RADIUS = 40;
 
 const SCALING_STEP_MAX = 50;
-const SCALING_DURATION = 5000;
+const SCALING_DURATION = 6000;
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -66,7 +66,7 @@ const enemies = [
   { x: 300, y: 100, type: 'flak', lastShot: 0 },
   { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
   { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
-  { x: 1000, y: -900, type: 'flak', lastShot: 0 },
+  { x: 1000, y: -1500, type: 'flak', lastShot: 0 },
   { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
 ];
 const enemyType2Img = {
@@ -339,12 +339,19 @@ function drawFrame(timestamp) {
           e.lastShot = timestamp;
           e.shooting = true;
           e.targets = [];
+          if (scaling) {
+            return;
+          }
           for (let i=0; i<FLAK_FRAGMENT_COUNT; i++) {
             e.targets.push({
               x: getRandomIntFromInterval(-120, 120),
               y: getRandomIntFromInterval(-80, 80)
             });
           }
+        }
+
+        if (scaling) {
+          e.targets = [];
         }
 
         if (e.shooting) {
