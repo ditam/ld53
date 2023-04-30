@@ -24,6 +24,10 @@ const HUNTER_TIMEOUT = 2000;
 const HELICOPTER_TIMEOUT = 3000;
 const HELICOPTER_FIRE_DURATION = 1500;
 const HELICOPTER_HIT_RADIUS = 150;
+const FLAK_INITIAL_TIMEOUT = 2000;
+const FLAK_FIRE_TIMEOUT = 5000;
+const FLAK_FRAGMENT_COUNT = 7;
+const FLAK_HIT_RADIUS = 40;
 
 const SCALING_STEP_MAX = 50;
 const SCALING_DURATION = 5000;
@@ -59,20 +63,25 @@ const targets = [
 
 const enemies = [
   { x: 600, y: 200, type: 'hunter', lastShot: 0 },
-  { x: 300, y: 100, type: 'helicopter', lastShot: 0 },
-  { x: 1100, y: -200, type: 'hunter', lastShot: 0 },
+  { x: 300, y: 100, type: 'flak', lastShot: 0 },
+  { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
+  { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
+  { x: 1000, y: -900, type: 'flak', lastShot: 0 },
   { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
 ];
 const enemyType2Img = {
+  flak: $('<img>').attr('src', 'assets/flak.png').get(0),
   helicopter: $('<img>').attr('src', 'assets/helicopter.png').get(0),
   hunter: $('<img>').attr('src', 'assets/hunter.png').get(0),
 };
 // NB: range also determines the in-viewport checks
 const enemyType2Range = {
+  flak: 0,
   helicopter: 0,
   hunter: HUNTER_RANGE,
 };
 const enemyType2Size = {
+  flak: 128,
   helicopter: 128,
   hunter: 32,
 };
@@ -296,6 +305,7 @@ function drawFrame(timestamp) {
 
           const curveOffset = Math.sin(Math.PI * shotProgress) * 100 * (e.x<WIDTH/2? -1 : 1);
           // TODO: rotate, if not exactly, at least 180 when shooting upwards
+          //       (flipping should be as simple as negating sHeight, but it does not seem to work?)
           ctx.drawImage(
             rocketImage,
             getSpriteOffset(frameCount, 'rocket'), 0, 64, 64,
@@ -320,6 +330,46 @@ function drawFrame(timestamp) {
           ctx.fillStyle = '#dd20dd';
           ctx.fillRect(e.x-2, e.y + mapOffset -2, 4, 4);
           ctx.restore();
+        }
+      } else if (e.type === 'flak') {
+        if (!e.activated) {
+          e.lastShot = timestamp;
+          e.activated = true;
+        } else if (timestamp - e.lastShot > FLAK_INITIAL_TIMEOUT && !e.shooting) {
+          e.lastShot = timestamp;
+          e.shooting = true;
+          e.targets = [];
+          for (let i=0; i<FLAK_FRAGMENT_COUNT; i++) {
+            e.targets.push({
+              x: getRandomIntFromInterval(-120, 120),
+              y: getRandomIntFromInterval(-80, 80)
+            });
+          }
+        }
+
+        if (e.shooting) {
+          ctx.save();
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = 'red';
+          e.targets.forEach(t => {
+            ctx.beginPath();
+            ctx.arc(player.x + t.x, player.y + t.y, 15, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+
+        if (e.shooting && timestamp - e.lastShot > FLAK_FIRE_TIMEOUT && !e.shotEvaluated && !scaling) {
+          let hitCount = 0;
+          e.targets.forEach(t => {
+            const dist = Math.sqrt(t.x*t.x + t.y*t.y);
+            if (dist < FLAK_HIT_RADIUS) {
+              hitCount++;
+            }
+          });
+          console.log('flak hit ' + hitCount + '/' + FLAK_FRAGMENT_COUNT);
+          e.targets = [];
+          e.shotEvaluated = true;
         }
       }
     }
