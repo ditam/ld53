@@ -1,49 +1,4 @@
 
-const ORIG_WIDTH = 1200;
-const ORIG_HEIGHT = 700;
-let WIDTH = ORIG_WIDTH;
-let HEIGHT = ORIG_HEIGHT;
-
-const PLAYER_SIZE = {
-  X: 100,
-  Y: 50
-};
-
-// used as padding for determining drawing of off-map objects
-const OBJ_SIZE_MAX = 200;
-
-const PACKAGE_SIZE = 50;
-const PACKAGE_MIN_SIZE = 5;
-
-const DROP_TIMEOUT = 1000;
-const FALL_DURATION = 3000;
-
-const PLAYER_SPEED = 8;
-const HUNTER_RANGE = 250;
-const HUNTER_TIMEOUT = 2000;
-const HELICOPTER_TIMEOUT = 3000;
-const HELICOPTER_FIRE_DURATION = 1500;
-const HELICOPTER_HIT_RADIUS = 150;
-const FLAK_INITIAL_TIMEOUT = 2000;
-const FLAK_FIRE_TIMEOUT = 5000;
-const FLAK_FRAGMENT_COUNT = 7;
-const FLAK_HIT_RADIUS = 40;
-
-const SCALING_STEP_MAX = 50;
-const SCALING_DURATION = 6000;
-const SCALE_TIMEOUT = 7000;
-
-const DASH_STEP_SIZE = 20; // implicitly controls duration - takes shorter if there's no room to dash
-const DASH_TIMEOUT = 3000;
-const DASH_MAX_LENGTH = 450; // in px
-const DASH_TRAIL_FADEOUT = 2500;
-const DASH_DAMAGE_RADIUS = 100;
-
-const EXPLOSION_VISIBLE_TIME = 700;
-
-// if you want to dash again while an other trail is visible, we need to revisit the trail logic (singleton vars currently)
-console.assert(DASH_TRAIL_FADEOUT < DASH_TIMEOUT);
-
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
@@ -56,32 +11,8 @@ let DEBUG = location && location.hostname==='localhost';
 let ctx, debugLog;
 
 let mapOffset = 0;
-const targets = [
-  { x: 800, y: 500 },
-  { x: 250, y: 400 },
-  { x: 200, y: 200 },
-  { x: 800, y: -100 },
-  { x: 500, y: -200 },
-  { x: 200, y: -400 },
-  { x: 700, y: -700 },
-  { x: 300, y: -1000 },
-  { x: 500, y: -1200 },
-  { x: 300, y: -1400 },
-  { x: 500, y: -1700 },
-  { x: 300, y: -2000 },
-  { x: 400, y: -2100 },
-  { x: 500, y: -2200 },
-];
 
-const enemies = [
-  { x: 600, y: 200, type: 'hunter', lastShot: 0 },
-  { x: 300, y: 100, type: 'flak', lastShot: 0 },
-  { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
-  { x: 750, y: -400, type: 'helicopter', lastShot: 0 },
-  { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
-  { x: 1000, y: -1500, type: 'flak', lastShot: 0 },
-  { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
-];
+let currentLevel = 0;
 const enemyType2Img = {
   flak: $('<img>').attr('src', 'assets/flak.png').get(0),
   helicopter: $('<img>').attr('src', 'assets/helicopter.png').get(0),
@@ -154,11 +85,11 @@ function getSpriteOffset(currentFrame, objName) {
 
   let spriteOffset = 0;
   if (objName === 'stork') {
-    if (currentFrame%100 > 80) {
-      spriteOffset = 100;
+    if (currentFrame%140 > 110) {
+      spriteOffset = PLAYER_SIZE.X * 1;
     }
-    if (currentFrame%100 > 90) {
-      spriteOffset = 200;
+    if (currentFrame%140 > 125) {
+      spriteOffset = PLAYER_SIZE.X * 2;
     }
   } else if (objName === 'rocket') {
     if (currentFrame%30 > 15) {
@@ -192,6 +123,8 @@ function drawFrame(timestamp) {
   ctx.save();
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  // Apply scaling effect
   if (scaling) {
     scaledViewportAdjustment = 1000;
     if (scalingType === 'out') {
@@ -259,7 +192,7 @@ function drawFrame(timestamp) {
       dashing = false;
 
       // check for enemies hit by dash
-      enemies.forEach(e => {
+      levels[currentLevel].enemies.forEach(e => {
         if (e.type === 'helicopter') {
           if (
             dashX - DASH_DAMAGE_RADIUS < e.x && e.x < dashX + DASH_DAMAGE_RADIUS &&
@@ -329,7 +262,7 @@ function drawFrame(timestamp) {
   });
 
   // draw enemies
-  enemies.forEach(e => {
+  levels[currentLevel].enemies.forEach(e => {
     const size = enemyType2Size[e.type];
     const range = enemyType2Range[e.type];
     if (
@@ -480,7 +413,7 @@ function drawFrame(timestamp) {
   });
 
   // draw targets (TODO: appear as houses)
-  targets.forEach(t => {
+  levels[currentLevel].targets.forEach(t => {
     if (
       (t.y + mapOffset + OBJ_SIZE_MAX + scaledViewportAdjustment > 0) // already in view
       &&
@@ -512,7 +445,7 @@ function drawFrame(timestamp) {
       // calculate score
       package.evaluated = true;
 
-      targets.forEach(t => {
+      levels[currentLevel].targets.forEach(t => {
         // TODO: higher score for chimney hits?
         if (
           t.x < package.x &&
