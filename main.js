@@ -31,6 +31,15 @@ const FLAK_HIT_RADIUS = 40;
 
 const SCALING_STEP_MAX = 50;
 const SCALING_DURATION = 6000;
+const SCALE_TIMEOUT = 7000;
+
+const DASH_DURATION = 800;
+const DASH_TIMEOUT = 3000;
+const DASH_MAX_LENGTH = 250; // in px
+const DASH_TRAIL_FADEOUT = 2500;
+
+// if you want to dash again while an other trail is visible, we need to revisit the trail logic (singleton vars currently)
+console.assert(DASH_TRAIL_FADEOUT < DASH_TIMEOUT);
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -123,6 +132,8 @@ const keysPressed = {
   right: false,
   down:  false,
   left:  false,
+  e:     false,
+  q:     false,
   space: false
 };
 
@@ -155,14 +166,22 @@ function getSpriteOffset(currentFrame, objName) {
   return spriteOffset;
 }
 
+// State related to special abilities (scaling, dash etc)
 let scaling = false;
 let scalingType = 'out';
 let currentScale = 1.0;
 let scalingSteps = 0;
 let scalingTimer = null;
-
 // used to increase the padding for the in-viewport checks while scaled
 let scaledViewportAdjustment = 0;
+
+let dashing = false;
+let lastScale = 0;
+let lastDash = -DASH_TIMEOUT; // allowing immediate dashing for debug - TODO: block until unlocked
+let dashStartY = null;
+let dashEndY = null;
+let dashX = null;
+
 
 function drawFrame(timestamp) {
   ctx.save();
@@ -205,18 +224,65 @@ function drawFrame(timestamp) {
   // scroll map
   mapOffset++;
 
-  // move player
-  if (keysPressed.up && player.y > 0) {
-    player.y = Math.max(0, player.y - PLAYER_SPEED);
+  // trigger special abilities
+  if (keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
+    scaling = true;
+    lastScale = timestamp;
   }
-  if (keysPressed.right && player.x < WIDTH) {
-    player.x = Math.min(WIDTH, player.x + PLAYER_SPEED);
+  if (keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
+    dashing = true;
+    dashX = player.x;
+    dashStartY = player.y - mapOffset;
+    dashEndY = Math.max(-mapOffset, dashStartY - DASH_MAX_LENGTH);
+    lastDash = timestamp;
+    console.log('Dash from:', dashStartY, '->', dashEndY);
   }
-  if (keysPressed.down && player.y < HEIGHT) {
-    player.y = Math.min(HEIGHT, player.y + PLAYER_SPEED);
+
+  if (dashing) {
+    player.y = Math.max(dashEndY + mapOffset, player.y - 20);
+
+    // draw trail
+    ctx.save();
+    ctx.fillStyle = 'white';
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(dashX - 20, player.y, 40, dashStartY - player.y + mapOffset);
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(dashX - 5, player.y, 10, dashStartY - player.y + mapOffset);
+    ctx.restore();
+
+    if (player.y === (dashEndY + mapOffset)) {
+      dashing = false;
+    }
+  } else {
+    // dash trail might be still visible
+    if (timestamp - lastDash < DASH_TRAIL_FADEOUT) {
+      const strength = 1 - ((timestamp - lastDash) / DASH_TRAIL_FADEOUT);
+      ctx.save();
+      ctx.fillStyle = 'white';
+      ctx.globalAlpha = 0.3 * strength;
+      ctx.fillRect(dashX - 20, dashStartY + mapOffset, 40, dashEndY - dashStartY);
+      ctx.globalAlpha = 0.7 * strength;
+      ctx.fillRect(dashX -  5, dashStartY + mapOffset, 10, dashEndY - dashStartY);
+      ctx.restore();
+    }
+
+    // move player
+    if (keysPressed.up && player.y > 0) {
+      player.y = Math.max(0, player.y - PLAYER_SPEED);
+    }
+    if (keysPressed.right && player.x < WIDTH) {
+      player.x = Math.min(WIDTH, player.x + PLAYER_SPEED);
+    }
+    if (keysPressed.down && player.y < HEIGHT) {
+      player.y = Math.min(HEIGHT, player.y + PLAYER_SPEED);
+    }
+    if (keysPressed.left && player.x > 0) {
+      player.x = Math.max(0, player.x - PLAYER_SPEED);
+    }
   }
-  if (keysPressed.left && player.x > 0) {
-    player.x = Math.max(0, player.x - PLAYER_SPEED);
+
+  if (DEBUG) {
+    debugLog.text(JSON.stringify(player) + ' mapOffset:' + mapOffset);
   }
 
   // drop packages
@@ -424,7 +490,7 @@ function drawFrame(timestamp) {
           t.y + 70 > package.y
         ) {
           playerScore += 500;
-          debugLog.text(playerScore);
+          // TODO: update score counter
         }
       });
 
@@ -499,6 +565,12 @@ $(document).ready(function() {
       case 'ArrowLeft':
         keysPressed.left = true;
         break;
+      case 'KeyQ':
+        keysPressed.q = true;
+        break;
+      case 'KeyE':
+        keysPressed.e = true;
+        break;
       case 'Space':
         keysPressed.space = true;
         break;
@@ -524,6 +596,12 @@ $(document).ready(function() {
       case 'KeyA':
       case 'ArrowLeft':
         keysPressed.left = false;
+        break;
+      case 'KeyQ':
+        keysPressed.q = false;
+        break;
+      case 'KeyE':
+        keysPressed.e = false;
         break;
       case 'Space':
         keysPressed.space = false;
