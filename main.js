@@ -23,6 +23,7 @@ const HUNTER_RANGE = 250;
 const HUNTER_TIMEOUT = 2000;
 const HELICOPTER_TIMEOUT = 3000;
 const HELICOPTER_FIRE_DURATION = 1500;
+const HELICOPTER_HIT_RADIUS = 150;
 
 const SCALING_STEP_MAX = 50;
 const SCALING_DURATION = 5000;
@@ -303,9 +304,14 @@ function drawFrame(timestamp) {
 
           if (shotProgress === 1) {
             e.shooting = 0;
-            // TODO: distance check
-            // TODO: don't check when scaling
-            console.log('heli hit player');
+            // check hit radius (hit if target is still close to player)
+            const targetToActualDist = Math.sqrt(
+              (e.targetX - player.x)*(e.targetX - player.x) +
+              (e.targetY - player.y)*(e.targetY - player.y)
+            );
+            if (targetToActualDist < HELICOPTER_HIT_RADIUS && !scaling) {
+              console.log('heli hit player');
+            }
           }
         }
 
