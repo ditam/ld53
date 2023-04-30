@@ -53,6 +53,7 @@ const cloud2Image = $('<img>').attr('src', 'assets/cloud2.png').get(0);
 const explosionImage = $('<img>').attr('src', 'assets/explosion.png').get(0);
 const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
 const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
+const dashImage = $('<img>').attr('src', 'assets/stork-dash.png').get(0);
 const player = {
   x: 600,
   y: 600
@@ -477,8 +478,9 @@ function drawFrame(timestamp) {
   }
 
   ctx.save();
+  const _image = dashing? dashImage : playerImage;
   ctx.drawImage(
-    playerImage,
+    _image,
     getSpriteOffset(frameCount, 'stork'), 0, PLAYER_SIZE.X, PLAYER_SIZE.Y,
     player.x-PLAYER_SIZE.X/2, player.y-PLAYER_SIZE.Y/2, PLAYER_SIZE.X, PLAYER_SIZE.Y
   );
