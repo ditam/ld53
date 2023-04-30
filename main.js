@@ -240,8 +240,8 @@ function drawFrame(timestamp) {
   if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT && !scaling) {
     // TODO: after graphics are finalized, adjust package x/y to start from beak
     packages.push({
-      x: player.x,
-      y: player.y - mapOffset,
+      x: player.x - PACKAGE_SIZE/2,
+      y: player.y - mapOffset - PACKAGE_SIZE/2 - 28,
       type: Math.random() < 0.5 ? 'blue' : 'pink',
       dropTime: timestamp
     });
@@ -438,7 +438,7 @@ function drawFrame(timestamp) {
     const size = Math.max(PACKAGE_MIN_SIZE, PACKAGE_SIZE * (1-age));
     ctx.drawImage(
       package.type === 'blue'? packageImageBlue : packageImagePink,
-      package.x, package.y + mapOffset, size, size
+      package.x + (PACKAGE_SIZE - size)/2, package.y + mapOffset + (PACKAGE_SIZE - size)/2, size, size
     );
 
     if (age === 1 && !package.evaluated) {
