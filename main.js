@@ -598,6 +598,7 @@ $(document).ready(function() {
       PLAYER_SPEED++; // FIXME: should not be allcaps const then. TODO: make upgrade optional
       interactionsBlocked = false;
       mapOffset = 0;
+      playerHealth = 12;
       player.x = 600;
       player.y = 600;
     }
