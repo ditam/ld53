@@ -22,10 +22,12 @@ const levels = [{
     { x: 1100, y: -300, type: 'hunter', lastShot: 0 },
     { x: 1000, y: -1500, type: 'flak', lastShot: 0 },
     { x: 100, y: -1800, type: 'hunter', lastShot: 0 },
-  ]
+  ],
+  end: 600,
 }];
 
 levels.forEach(l => {
   console.assert(l.hasOwnProperty('targets'));
   console.assert(l.hasOwnProperty('enemies'));
+  console.assert(l.hasOwnProperty('end'));
 });

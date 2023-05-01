@@ -21,3 +21,34 @@ canvas {
   left: 25%;
   top: 15%;
 }
+
+#level-scores {
+  display: none;
+
+  position: absolute;
+  top: 170px;
+  left: 500px;
+  width: 600px;
+  height: 300px;
+
+  font-family: monospace;
+  line-height: 55px;
+}
+
+#level-scores h1 {
+  font-size: 38px;
+}
+
+#level-scores #next-level-button{
+  border: 1px solid black;
+  border-radius: 0px;
+  width: 100px;
+  text-align: center;
+  margin-left: 400px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#level-scores #next-level-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}

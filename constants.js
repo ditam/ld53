@@ -18,7 +18,9 @@ const PACKAGE_MIN_SIZE = 5;
 const DROP_TIMEOUT = 1000;
 const FALL_DURATION = 3000;
 
-const PLAYER_SPEED = 8;
+// increases every level
+let PLAYER_SPEED = 6;
+
 const HUNTER_RANGE = 250;
 const HUNTER_TIMEOUT = 2000;
 const HELICOPTER_TIMEOUT = 3000;

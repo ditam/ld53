@@ -166,13 +166,17 @@ function drawFrame(timestamp) {
   // scroll map
   mapOffset++;
 
+  if (mapOffset > levels[currentLevel].end) {
+    showLevelSummary();
+  }
+
   // trigger special abilities
-  if (keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
+  if (!interactionsBlocked && keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
     scaling = true;
     lastScale = timestamp;
     sounds.scale.play();
   }
-  if (keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
+  if (!interactionsBlocked && keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
     dashing = true;
     dashX = player.x;
     dashStartY = player.y - mapOffset;
@@ -224,16 +228,16 @@ function drawFrame(timestamp) {
     }
 
     // move player
-    if (keysPressed.up && player.y > 0) {
+    if (!interactionsBlocked && keysPressed.up && player.y > 0) {
       player.y = Math.max(0, player.y - PLAYER_SPEED);
     }
-    if (keysPressed.right && player.x < WIDTH) {
+    if (!interactionsBlocked && keysPressed.right && player.x < WIDTH) {
       player.x = Math.min(WIDTH, player.x + PLAYER_SPEED);
     }
-    if (keysPressed.down && player.y < HEIGHT) {
+    if (!interactionsBlocked && keysPressed.down && player.y < HEIGHT) {
       player.y = Math.min(HEIGHT, player.y + PLAYER_SPEED);
     }
-    if (keysPressed.left && player.x > 0) {
+    if (!interactionsBlocked && keysPressed.left && player.x > 0) {
       player.x = Math.max(0, player.x - PLAYER_SPEED);
     }
   }
@@ -243,7 +247,7 @@ function drawFrame(timestamp) {
   }
 
   // drop packages
-  if (keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT && !scaling) {
+  if (!interactionsBlocked && keysPressed.space && timestamp - lastDrop > DROP_TIMEOUT && !scaling) {
     // TODO: after graphics are finalized, adjust package x/y to start from beak
     packages.push({
       x: player.x - PACKAGE_SIZE/2,
@@ -471,6 +475,7 @@ function drawFrame(timestamp) {
           t.y < package.y &&
           t.y + 70 > package.y
         ) {
+          deliveredCount++;
           playerScore += 500;
           sounds.targetHit.play();
           // TODO: update score counter
@@ -519,6 +524,26 @@ function drawFrame(timestamp) {
   requestAnimationFrame(drawFrame);
 }
 
+let deliveredCount = 0;
+let interactionsBlocked = false;
+const levelMessages = [
+  'Good job, cadet! This is the perfect cover...',
+  'I think they are on to us. They know those are not babies in the packages!',
+  'Good job.',
+  'Good job.',
+  'Good job.',
+  'Good job.',
+];
+function showLevelSummary() {
+  interactionsBlocked = true;
+  player.x = 350;
+  player.y = 320;
+  $('#message').text(levelMessages[currentLevel]);
+  $('#package-counter').text(deliveredCount);
+  $('#score-counter').text(playerScore);
+  $('#level-scores').show();
+}
+
 $(document).ready(function() {
   console.log('Hello Delivery!');
 
@@ -534,6 +559,21 @@ $(document).ready(function() {
     splash.remove();
     // blast off
     drawFrame(0);
+  });
+
+  $('#next-level-button').on('click', () => {
+    if (levels.length === currentLevel + 1) {
+      $('#level-scores h1').text('Congratulations, you won!');
+      $('#message').text('Check back later for a post-jam version.');
+      $('#next-level-button').remove();
+    } else {
+      currentLevel++;
+      PLAYER_SPEED++; // FIXME: should not be allcaps const then. TODO: make upgrade optional
+      interactionsBlocked = false;
+      mapOffset = 0;
+      player.x = 600;
+      player.y = 600;
+    }
   });
 
   ctx = canvas.getContext('2d');
