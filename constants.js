@@ -20,6 +20,7 @@ const FALL_DURATION = 3000;
 
 // increases every level
 let PLAYER_SPEED = 6;
+const PLAYER_HEALTH_INITIAL = 12;
 
 const HUNTER_RANGE = 250;
 const HUNTER_TIMEOUT = 2000;

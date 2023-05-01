@@ -64,7 +64,7 @@ const player = {
 };
 
 let playerScore = 0;
-let playerHealth = 12;
+let playerHealth = PLAYER_HEALTH_INITIAL;
 
 const packageImageBlue = $('<img>').attr('src', 'assets/package-blue.png').get(0);
 const packageImagePink = $('<img>').attr('src', 'assets/package-pink.png').get(0);
@@ -541,7 +541,8 @@ function checkPlayerHealth() {
     alert('Game over.');
     sounds.explosion.play();
     currentLevel = 0;
-    playerHealth = 10;
+    playerHealth = PLAYER_HEALTH_INITIAL;
+    playerScore = 0;
     mapOffset = 0;
     packages.length = 0;
     player.x = 600;
@@ -598,7 +599,7 @@ $(document).ready(function() {
       interactionsBlocked = false;
       mapOffset = 0;
       packages.length = 0;
-      playerHealth = 12;
+      playerHealth = PLAYER_HEALTH_INITIAL;
       player.x = 600;
       player.y = 600;
 
