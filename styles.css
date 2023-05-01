@@ -12,6 +12,12 @@ canvas {
   background-color: black;
   color: white;
   text-align: center;
-  line-height: 700px;
+  line-height: 1250px;
   cursor: pointer;
+}
+
+#splash img {
+  position: absolute;
+  left: 25%;
+  top: 15%;
 }
