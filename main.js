@@ -178,18 +178,7 @@ function drawFrame(timestamp) {
   }
 
   // trigger special abilities
-  if (!interactionsBlocked && keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
-    if (currentLevel < 3) {
-      return;
-    }
-    scaling = true;
-    lastScale = timestamp;
-    sounds.scale.play();
-  }
-  if (!interactionsBlocked && keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
-    if (currentLevel < 2) {
-      return;
-    }
+  if (currentLevel > 1 && !interactionsBlocked && keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
     dashing = true;
     dashX = player.x;
     dashStartY = player.y - mapOffset;
@@ -197,6 +186,11 @@ function drawFrame(timestamp) {
     lastDash = timestamp;
     sounds.dash.play();
     console.log('Dash from:', dashStartY, '->', dashEndY);
+  }
+  if (currentLevel > 2 && !interactionsBlocked && keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
+    scaling = true;
+    lastScale = timestamp;
+    sounds.scale.play();
   }
 
   if (dashing) {
