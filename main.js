@@ -217,6 +217,7 @@ function drawFrame(timestamp) {
           ) {
             e.destroyed = true;
             e.destroyedTime = timestamp;
+            playerScore += 5000;
           }
         }
       });
@@ -296,7 +297,6 @@ function drawFrame(timestamp) {
         if (e.destroyed && timestamp - e.destroyedTime > EXPLOSION_VISIBLE_TIME) {
           destroyedCount++;
           e.removed = true;
-          return;
         }
         if (destroyedCount > 0) {
           sounds.explosion.play();
