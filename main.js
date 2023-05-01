@@ -510,6 +510,11 @@ function drawFrame(timestamp) {
   }
   ctx.restore();
 
+  // draw score counter
+  ctx.save();
+  ctx.strokeText('SCORE ' + String(playerScore).padStart(8, '0'), WIDTH/2 - 130, 30);
+  ctx.restore();
+
   frameCount++;
   requestAnimationFrame(drawFrame);
 }
@@ -539,6 +544,7 @@ $(document).ready(function() {
   ctx.fillStyle = '#88DD88';
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 1;
+  ctx.font = '32px monospace';
 
   // initialize audio assets
   sounds.alarm = new Audio('assets/sounds/alarm.mp3');
