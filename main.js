@@ -34,11 +34,11 @@ const enemyType2Size = {
 
 const mapDoodads = [];
 (function generateRandomDoodads(){
-  for (let i=0; i<100; i++) {
+  for (let i=0; i<400; i++) {
     mapDoodads.push({
       // to make the scale effect look nice, we generate doodads slightly off to the sides as well
       x: getRandomIntFromInterval(-400, WIDTH+400),
-      y: getRandomIntFromInterval(-3000, HEIGHT),
+      y: getRandomIntFromInterval(-6000, HEIGHT),
       type: getRandomItem(['grass1', 'grass2', 'bush'])
     });
   }
@@ -593,6 +593,7 @@ $(document).ready(function() {
       $('#message').text('Check back later for a post-jam version.');
       $('#next-level-button').remove();
     } else {
+      $('#level-scores').hide();
       currentLevel++;
       PLAYER_SPEED++; // FIXME: should not be allcaps const then. TODO: make upgrade optional
       interactionsBlocked = false;
