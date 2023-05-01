@@ -582,9 +582,8 @@ $(document).ready(function() {
   splash.height(HEIGHT);
   splash.on('click', function() {
     // NB: We need a splash screen to force a user interaction which allows audio
+    //     Note that map scroll waits for a splash screen to be not visible.
     splash.hide();
-    // blast off
-    requestAnimationFrame(drawFrame);
   });
 
   $('#next-level-button').on('click', () => {
@@ -699,4 +698,7 @@ $(document).ready(function() {
         break;
     }
   });
+
+  // blast off
+  drawFrame(0);
 });
