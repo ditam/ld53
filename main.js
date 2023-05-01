@@ -543,6 +543,7 @@ function checkPlayerHealth() {
     currentLevel = 0;
     playerHealth = 10;
     mapOffset = 0;
+    packages.length = 0;
     player.x = 600;
     player.y = 600;
   }
@@ -596,6 +597,7 @@ $(document).ready(function() {
       PLAYER_SPEED = PLAYER_SPEED + 0.5; // FIXME: should not be allcaps const then. TODO: make upgrade optional
       interactionsBlocked = false;
       mapOffset = 0;
+      packages.length = 0;
       playerHealth = 12;
       player.x = 600;
       player.y = 600;
