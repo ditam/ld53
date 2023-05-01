@@ -52,10 +52,12 @@ const doodadType2Img = {
 const cloud1Image = $('<img>').attr('src', 'assets/cloud1.png').get(0);
 const cloud2Image = $('<img>').attr('src', 'assets/cloud2.png').get(0);
 
-const explosionImage = $('<img>').attr('src', 'assets/explosion.png').get(0);
-const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
-const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
 const dashImage = $('<img>').attr('src', 'assets/stork-dash.png').get(0);
+const explosionImage = $('<img>').attr('src', 'assets/explosion.png').get(0);
+const playerImage = $('<img>').attr('src', 'assets/stork_sprite.png').get(0);
+const rocketImage = $('<img>').attr('src', 'assets/rocket_sprite.png').get(0);
+const targetImage = $('<img>').attr('src', 'assets/target.png').get(0);
+
 const player = {
   x: 600,
   y: 600
@@ -173,11 +175,17 @@ function drawFrame(timestamp) {
 
   // trigger special abilities
   if (!interactionsBlocked && keysPressed.e && timestamp - lastScale > SCALE_TIMEOUT && !scaling) {
+    if (currentLevel < 3) {
+      return;
+    }
     scaling = true;
     lastScale = timestamp;
     sounds.scale.play();
   }
   if (!interactionsBlocked && keysPressed.q && timestamp - lastDash > DASH_TIMEOUT && !dashing) {
+    if (currentLevel < 2) {
+      return;
+    }
     dashing = true;
     dashX = player.x;
     dashStartY = player.y - mapOffset;
@@ -441,7 +449,7 @@ function drawFrame(timestamp) {
     }
   });
 
-  // draw targets (TODO: appear as houses)
+  // draw targets
   levels[currentLevel].targets.forEach(t => {
     if (
       (t.y + mapOffset + OBJ_SIZE_MAX + scaledViewportAdjustment > 0) // already in view
@@ -449,8 +457,7 @@ function drawFrame(timestamp) {
       (t.y + mapOffset < HEIGHT) // not yet scrolled out
     ) {
       ctx.save();
-      ctx.fillStyle = '#994400';
-      ctx.fillRect(t.x, t.y + mapOffset, 150, 70);
+      ctx.drawImage(targetImage, t.x, t.y + mapOffset, 150, 70);
       ctx.restore();
     }
   });
