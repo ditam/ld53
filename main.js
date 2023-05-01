@@ -17,7 +17,7 @@ let mapOffset = 0;
 let currentLevel = 0;
 const enemyType2Img = {
   flak: $('<img>').attr('src', 'assets/flak.png').get(0),
-  helicopter: $('<img>').attr('src', 'assets/helicopter.png').get(0),
+  helicopter: $('<img>').attr('src', 'assets/helicopter-sprite.png').get(0),
   hunter: $('<img>').attr('src', 'assets/hunter.png').get(0),
 };
 // NB: range also determines the in-viewport checks
@@ -29,7 +29,7 @@ const enemyType2Range = {
 const enemyType2Size = {
   flak: 128,
   helicopter: 128,
-  hunter: 32,
+  hunter: 36,
 };
 
 const mapDoodads = [];
@@ -98,6 +98,10 @@ function getSpriteOffset(currentFrame, objName) {
       spriteOffset = PLAYER_SIZE.X * 2;
     }
   } else if (objName === 'rocket') {
+    if (currentFrame%30 > 15) {
+      spriteOffset = 64;
+    }
+  } else if (objName === 'helicopter') {
     if (currentFrame%30 > 15) {
       spriteOffset = 64;
     }
@@ -302,7 +306,17 @@ function drawFrame(timestamp) {
           sounds.explosion.play();
         }
       }
-      ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, size, size);
+      if (e.type === 'helicopter') {
+        // draw sprite frame
+        ctx.drawImage(
+          enemyType2Img[e.type],
+          getSpriteOffset(frameCount, 'helicopter'), 0, 64, 64,
+          e.x - size/2, e.y -size/2 + mapOffset, size, size
+        );
+      } else {
+        // draw image
+        ctx.drawImage(enemyType2Img[e.type], e.x - size/2, e.y -size/2 + mapOffset, size, size);
+      }
       if (e.type === 'hunter') {
         // draw range
         ctx.beginPath();
@@ -318,7 +332,7 @@ function drawFrame(timestamp) {
         // (dX, dY is now the unit vector pointing towards the player)
 
         ctx.save();
-          ctx.lineWidth = 5;
+          ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.moveTo(e.x, e.y + mapOffset);
           ctx.lineTo(e.x + dX * 30, e.y + mapOffset + dY * 30);
