@@ -62,6 +62,7 @@ const player = {
 };
 
 let playerScore = 0;
+let playerHealth = 12;
 
 const packageImageBlue = $('<img>').attr('src', 'assets/package-blue.png').get(0);
 const packageImagePink = $('<img>').attr('src', 'assets/package-pink.png').get(0);
@@ -243,7 +244,7 @@ function drawFrame(timestamp) {
   }
 
   if (DEBUG) {
-    debugLog.text(JSON.stringify(player) + ' mapOffset:' + mapOffset);
+    debugLog.text(JSON.stringify(player) + ' mapOffset:' + mapOffset + ' health:' + playerHealth);
   }
 
   // drop packages
@@ -322,6 +323,8 @@ function drawFrame(timestamp) {
         if (dist < HUNTER_RANGE && timestamp - e.lastShot > HUNTER_TIMEOUT && !scaling) {
           e.lastShot = timestamp;
           sounds.shot.play();
+          playerHealth--;
+          checkPlayerHealth();
           console.log('shot by:', e);
         }
       } else if (e.type === 'helicopter') {
@@ -369,6 +372,8 @@ function drawFrame(timestamp) {
             );
             if (targetToActualDist < HELICOPTER_HIT_RADIUS && !scaling) {
               console.log('heli hit player');
+              playerHealth-=4;
+              checkPlayerHealth();
             }
           }
         }
@@ -424,6 +429,8 @@ function drawFrame(timestamp) {
             }
           });
           console.log('flak hit ' + hitCount + '/' + FLAK_FRAGMENT_COUNT);
+          playerHealth-= hitCount * 5;
+          checkPlayerHealth();
           if (e.targets && e.targets.length > 0) {
             sounds.flak.play();
           }
@@ -524,6 +531,18 @@ function drawFrame(timestamp) {
   requestAnimationFrame(drawFrame);
 }
 
+function checkPlayerHealth() {
+  if (playerHealth < 0) {
+    alert('Game over.');
+    sounds.explosion.play();
+    currentLevel = 0;
+    playerHealth = 10;
+    mapOffset = 0;
+    player.x = 600;
+    player.y = 600;
+  }
+}
+
 let deliveredCount = 0;
 let interactionsBlocked = false;
 const levelMessages = [
@@ -579,7 +598,6 @@ $(document).ready(function() {
   ctx = canvas.getContext('2d');
 
   debugLog = $(document.getElementById('debug-log'));
-  debugLog.text(playerScore);
 
   ctx.fillStyle = '#88DD88';
   ctx.strokeStyle = 'black';
