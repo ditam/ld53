@@ -82,7 +82,7 @@ const levels = [{
     { x: 800, y: -300, type: 'helicopter', lastShot: 0 },
     { x: 750, y: -1400, type: 'flak', lastShot: 0 }
   ],
-  end: 2500,
+  end: 3000,
 }];
 
 levels.forEach(l => {

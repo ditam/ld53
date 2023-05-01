@@ -167,7 +167,11 @@ function drawFrame(timestamp) {
   // - TODO: extract and de-couple from drawing
 
   // scroll map
-  mapOffset++;
+  if ($('#splash:visible').length > 0) {
+    mapOffset = 0;
+  } else {
+    mapOffset++;
+  }
 
   if (mapOffset > levels[currentLevel].end) {
     showLevelSummary();
@@ -582,9 +586,9 @@ $(document).ready(function() {
   splash.height(HEIGHT);
   splash.on('click', function() {
     // NB: We need a splash screen to force a user interaction which allows audio
-    splash.remove();
+    splash.hide();
     // blast off
-    drawFrame(0);
+    requestAnimationFrame(drawFrame);
   });
 
   $('#next-level-button').on('click', () => {
@@ -595,12 +599,23 @@ $(document).ready(function() {
     } else {
       $('#level-scores').hide();
       currentLevel++;
-      PLAYER_SPEED++; // FIXME: should not be allcaps const then. TODO: make upgrade optional
+      PLAYER_SPEED = PLAYER_SPEED + 0.5; // FIXME: should not be allcaps const then. TODO: make upgrade optional
       interactionsBlocked = false;
       mapOffset = 0;
       playerHealth = 12;
       player.x = 600;
       player.y = 600;
+
+      if (currentLevel === 2) {
+        $('#splash-msg').text('New control available. Click to continue.');
+        $('#splash img').attr('src', 'assets/instructions2.png');
+        splash.show();
+      }
+      if (currentLevel === 3) {
+        $('#splash-msg').text('New control available. Click to continue.');
+        $('#splash img').attr('src', 'assets/instructions3.png');
+        splash.show();
+      }
     }
   });
 
