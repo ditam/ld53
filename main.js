@@ -556,6 +556,7 @@ function checkPlayerHealth() {
     sounds.explosion.play();
     currentLevel = 0;
     playerHealth = PLAYER_HEALTH_INITIAL;
+    PLAYER_SPEED = 6;
     playerScore = 0;
     mapOffset = 0;
     packages.length = 0;
@@ -581,6 +582,13 @@ function showLevelSummary() {
   $('#message').text(levelMessages[currentLevel]);
   $('#package-counter').text(deliveredCount);
   $('#score-counter').text(playerScore);
+
+  if (currentLevel%2 === 1) {
+    $('#upgrade-type').text('more health');
+  } else {
+    $('#upgrade-type').text('higher speed');
+  }
+
   $('#level-scores').show();
 }
 
@@ -608,11 +616,15 @@ $(document).ready(function() {
     } else {
       $('#level-scores').hide();
       currentLevel++;
-      PLAYER_SPEED = PLAYER_SPEED + 0.5; // FIXME: should not be allcaps const then. TODO: make upgrade optional
+      playerHealth = PLAYER_HEALTH_INITIAL;
+      if (currentLevel%2 === 1) {
+        PLAYER_SPEED = PLAYER_SPEED + 1; // FIXME: should not be allcaps const then. TODO: make upgrade optional
+      } else {
+        playerHealth += Math.floor(currentLevel / 2);
+      }
       interactionsBlocked = false;
       mapOffset = 0;
       packages.length = 0;
-      playerHealth = PLAYER_HEALTH_INITIAL;
       player.x = 600;
       player.y = 600;
 
