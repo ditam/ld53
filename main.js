@@ -449,7 +449,7 @@ function drawFrame(timestamp) {
             }
           });
           console.log('flak hit ' + hitCount + '/' + FLAK_FRAGMENT_COUNT);
-          playerHealth-= hitCount * 5;
+          playerHealth-= hitCount * FLAK_DMG_PER_HIT;
           checkPlayerHealth();
           if (e.targets && e.targets.length > 0) {
             sounds.flak.play();
@@ -461,7 +461,7 @@ function drawFrame(timestamp) {
     }
   });
 
-  // draw targets
+  // draw targets // TODO: rename to avoid confusion with flak targets
   levels[currentLevel].targets.forEach(t => {
     if (
       (t.y + mapOffset + OBJ_SIZE_MAX + scaledViewportAdjustment > 0) // already in view
