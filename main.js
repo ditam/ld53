@@ -391,9 +391,11 @@ function drawFrame(timestamp) {
               (e.targetY - player.y)*(e.targetY - player.y)
             );
             if (targetToActualDist < HELICOPTER_HIT_RADIUS && !scaling) {
-              console.log('heli hit player');
-              playerHealth-=4;
-              checkPlayerHealth();
+              if (!interactionsBlocked) {
+                console.log('heli hit player');
+                playerHealth-=4;
+                checkPlayerHealth();
+              }
             }
           }
         }
@@ -566,6 +568,7 @@ function checkPlayerHealth() {
 }
 
 let deliveredCount = 0;
+// we disallow movement during level complete screens for a nice layout
 let interactionsBlocked = false;
 const levelMessages = [
   'Good job, cadet! This is the perfect cover...',
