@@ -670,18 +670,22 @@ $(document).ready(function() {
     switch(event.code) {
       case 'KeyW':
       case 'ArrowUp':
+        event.preventDefault();
         keysPressed.up = true;
         break;
       case 'KeyD':
       case 'ArrowRight':
+        event.preventDefault();
         keysPressed.right = true;
         break;
       case 'KeyS':
       case 'ArrowDown':
+        event.preventDefault();
         keysPressed.down = true;
         break;
       case 'KeyA':
       case 'ArrowLeft':
+        event.preventDefault();
         keysPressed.left = true;
         break;
       case 'KeyQ':
@@ -691,11 +695,10 @@ $(document).ready(function() {
         keysPressed.e = true;
         break;
       case 'Space':
+        event.preventDefault();
         keysPressed.space = true;
         break;
     }
-    // the default behaviour might try to scroll or similar things
-    event.preventDefault();
   });
 
   document.addEventListener('keyup', event => {
