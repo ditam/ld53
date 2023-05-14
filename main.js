@@ -479,7 +479,9 @@ function drawFrame(timestamp) {
   // draw packages
   packages.forEach(package => {
     // only draw packages in viewport
-    if (package.y + mapOffset - PACKAGE_SIZE > HEIGHT) {
+    // (we add a padding to allow still falling packages to be counted)
+    const padding = 800;
+    if (package.y + mapOffset > HEIGHT + padding) {
       return;
     }
 
