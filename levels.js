@@ -1,4 +1,4 @@
-const levels = [{ // currentLevel = 0
+let levels = [{ // currentLevel = 0
   targets: [
     { x: 800, y: 500 },
     { x: 250, y: 400 },
@@ -141,3 +141,13 @@ levels.forEach(l => {
   console.assert(l.hasOwnProperty('enemies'));
   console.assert(l.hasOwnProperty('end'));
 });
+
+function deepCopy(o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
+const levelsOriginal = deepCopy(levels);
+
+function resetLevels() {
+  levels = deepCopy(levelsOriginal);
+}

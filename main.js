@@ -559,6 +559,7 @@ function checkPlayerHealth() {
     alert('Game over.');
     sounds.explosion.play();
     currentLevel = 0;
+    resetLevels();
     deliveredCount = 0;
     playerHealth = PLAYER_HEALTH_INITIAL;
     PLAYER_SPEED = 6;
